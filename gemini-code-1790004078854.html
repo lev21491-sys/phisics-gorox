@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Лабораторная работа: Определение размеров малых тел методом рядов (7 класс)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; touch-action: pan-y; }
+    body {
+      background: #0f172a;
+      color: #f8fafc;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px 12px 40px;
+    }
+    .container {
+      width: 100%;
+      max-width: 880px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .header {
+      text-align: center;
+    }
+    .header h1 {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #ffffff;
+      line-height: 1.35;
+    }
+    .header p {
+      font-size: 0.86rem;
+      color: #94a3b8;
+      margin-top: 4px;
+    }
+
+    /* Выбор предмета */
+    .items-selector {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+    .btn-item {
+      flex: 1;
+      min-width: 125px;
+      padding: 10px 8px;
+      border-radius: 10px;
+      border: 1.5px solid #334155;
+      background: #1e293b;
+      color: #cbd5e1;
+      font-family: inherit;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .btn-item.active {
+      background: #3b82f6;
+      border-color: #60a5fa;
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
+    }
+
+    /* Холст с подвижной линейкой */
+    canvas {
+      width: 100%;
+      height: 320px;
+      background: #f8fafc;
+      border-radius: 16px;
+      border: 2px solid #334155;
+      display: block;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+      cursor: grab;
+      touch-action: none;
+    }
+    canvas:active { cursor: grabbing; }
+
+    /* Панель ручного ввода до 250 штук */
+    .controls {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 14px;
+      padding: 14px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .input-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.95rem;
+      font-weight: 700;
+    }
+    .num-stepper {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-step {
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      border: 1px solid #475569;
+      background: #334155;
+      color: #fff;
+      font-size: 1.2rem;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: 0.15s;
+    }
+    .btn-step:hover { background: #475569; }
+    input[type=number].main-count {
+      width: 85px;
+      padding: 7px;
+      background: #0f172a;
+      border: 1.5px solid #3b82f6;
+      border-radius: 8px;
+      color: #60a5fa;
+      font-size: 1.15rem;
+      font-weight: 800;
+      text-align: center;
+      outline: none;
+    }
+
+    /* Формуляр расчёта для 7 класса */
+    .calc-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 14px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .calc-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 10px;
+    }
+    .calc-item {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .calc-item label {
+      font-size: 0.78rem;
+      color: #94a3b8;
+      font-weight: 700;
+    }
+    .calc-item input {
+      padding: 10px 8px;
+      background: #1e293b;
+      border: 1.5px solid #475569;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 1.05rem;
+      font-weight: 800;
+      outline: none;
+      text-align: center;
+    }
+    .calc-item input:focus {
+      border-color: #3b82f6;
+    }
+
+    .btn-check {
+      background: #10b981;
+      color: #fff;
+      border: none;
+      padding: 13px 20px;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .btn-check:hover { background: #059669; }
+    
+    .status-msg {
+      font-size: 0.9rem;
+      font-weight: 700;
+      line-height: 1.5;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1>Определение размеров малых тел методом рядов</h1>
+    <p>Лабораторная работа по физике (7 класс) • 🖐️ <b>Зажмите пальцем и свободно двигайте линейку или ряд!</b></p>
+  </div>
+
+  <!-- 6 предметов -->
+  <div class="items-selector">
+    <button class="btn-item active" onclick="selectItem(0)">🔘 Дробинки</button>
+    <button class="btn-item" onclick="selectItem(1)">🔴 Бусины</button>
+    <button class="btn-item" onclick="selectItem(2)">🌾 Гречиха</button>
+    <button class="btn-item" onclick="selectItem(3)">🟡 Пшено</button>
+    <button class="btn-item" onclick="selectItem(4)">⚙️ Гайки М3</button>
+    <button class="btn-item" onclick="selectItem(5)">🌰 Фасоль (бобы)</button>
+  </div>
+
+  <canvas id="rulerCanvas"></canvas>
+
+  <!-- Панель ручного ввода: максимум 250 -->
+  <div class="controls">
+    <div class="input-box">
+      <label for="inpCountN">Число тел в ряду N (до 250):</label>
+      <div class="num-stepper">
+        <button type="button" class="btn-step" onclick="changeCount(-10)">−10</button>
+        <button type="button" class="btn-step" onclick="changeCount(-1)">−</button>
+        <input type="number" id="inpCountN" class="main-count" min="1" max="250" value="25">
+        <button type="button" class="btn-step" onclick="changeCount(1)">+</button>
+        <button type="button" class="btn-step" onclick="changeCount(10)">+10</button>
+      </div>
+    </div>
+    <div style="display: flex; gap: 8px; align-items: center;">
+      <button class="btn-step" style="width: auto; padding: 0 12px; font-size: 0.85rem;" onclick="resetPos()">В начало 0</button>
+      <div style="font-size:0.9rem; color:#cbd5e1; font-weight:700;">
+        Цена деления: <span style="color:#facc15; font-size:1.05rem;">1 мм</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Проверочный блок для 7 класса -->
+  <div class="calc-card">
+    <div style="font-size:0.92rem; font-weight:800; color:#cbd5e1;">
+      📝 Внесите результаты измерений и проведите расчёт:
+    </div>
+
+    <div class="calc-grid">
+      <div class="calc-item">
+        <label>Длина ряда L (в мм):</label>
+        <input type="number" step="0.5" id="inpL" placeholder="например, 87.5">
+      </div>
+      <div class="calc-item">
+        <label>Число частиц N (шт):</label>
+        <input type="number" id="inpN" placeholder="25">
+      </div>
+      <div class="calc-item">
+        <label>Диаметр d = L / N (мм):</label>
+        <input type="number" step="0.01" id="inpD" placeholder="например, 3.5">
+      </div>
+      <div class="calc-item">
+        <label>Погрешность Δd = 1 / N (мм):</label>
+        <input type="number" step="0.001" id="inpErr" placeholder="например, 0.04">
+      </div>
+    </div>
+
+    <button class="btn-check" onclick="checkLabResult()">✓ Проверить вычисления (7 класс)</button>
+    <div class="status-msg" id="statusBox"></div>
+  </div>
+</div>
+
+<script>
+  const canvas = document.getElementById('rulerCanvas');
+  const ctx = canvas.getContext('2d');
+  const inpCountN = document.getElementById('inpCountN');
+  const statusBox = document.getElementById('statusBox');
+
+  const ITEMS = [
+    { name: "Металлические дробинки", d: 3.5, type: "metal" },
+    { name: "Круглые бусины", d: 6.0, type: "bead" },
+    { name: "Зёрна гречихи", d: 4.2, type: "grain" },
+    { name: "Крупинки пшена", d: 2.1, type: "millet" },
+    { name: "Гайки М3", d: 5.5, type: "nut" },
+    { name: "Семена фасоли (бобы)", d: 8.5, type: "bean" }
+  ];
+
+  let currentItemIdx = 0;
+  let countN = 25;
+
+  // Крупный постоянный масштаб: 1 мм = ровно 4.8 пикселя (не сжимается!)
+  const pxPerMm = 4.8;
+
+  // Смещение линейки / сцены (управляется пальцем)
+  let offsetX = 50;
+
+  function selectItem(idx) {
+    currentItemIdx = idx;
+    document.querySelectorAll('.btn-item').forEach((b, i) => {
+      b.classList.toggle('active', i === idx);
+    });
+    document.getElementById('inpN').value = countN;
+    statusBox.innerHTML = '';
+    render();
+  }
+
+  function changeCount(delta) {
+    let val = parseInt(inpCountN.value) || countN;
+    val = Math.max(1, Math.min(250, val + delta));
+    inpCountN.value = val;
+    updateCount();
+  }
+
+  function updateCount() {
+    let val = parseInt(inpCountN.value);
+    if (isNaN(val) || val < 1) val = 1;
+    if (val > 250) val = 250;
+    countN = val;
+    document.getElementById('inpN').value = countN;
+    statusBox.innerHTML = '';
+    render();
+  }
+
+  inpCountN.oninput = updateCount;
+
+  function resetPos() {
+    offsetX = 50;
+    render();
+  }
+
+  // СВОБОДНОЕ ПЕРЕТАСКИВАНИЕ ПАЛЬЦЕМ / МЫШКОЙ
+  let isDragging = false;
+  let startX = 0;
+  let startOffsetX = 0;
+
+  function pointerDown(clientX) {
+    isDragging = true;
+    startX = clientX;
+    startOffsetX = offsetX;
+  }
+
+  function pointerMove(clientX) {
+    if (!isDragging) return;
+    const dx = clientX - startX;
+    offsetX = startOffsetX + dx;
+    render();
+  }
+
+  function pointerUp() {
+    isDragging = false;
+  }
+
+  canvas.addEventListener('mousedown', e => pointerDown(e.clientX));
+  window.addEventListener('mousemove', e => pointerMove(e.clientX));
+  window.addEventListener('mouseup', pointerUp);
+
+  canvas.addEventListener('touchstart', e => {
+    if (e.touches.length === 1) pointerDown(e.touches[0].clientX);
+  }, { passive: true });
+
+  window.addEventListener('touchmove', e => {
+    if (e.touches.length === 1) pointerMove(e.touches[0].clientX);
+  }, { passive: true });
+
+  window.addEventListener('touchend', pointerUp);
+
+  function resize() {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.resetTransform();
+    ctx.scale(dpr, dpr);
+    render();
+  }
+  window.addEventListener('resize', resize);
+
+  function render() {
+    const w = canvas.getBoundingClientRect().width;
+    const h = canvas.getBoundingClientRect().height;
+    ctx.clearRect(0, 0, w, h);
+
+    const item = ITEMS[currentItemIdx];
+    const totalLengthMm = item.d * countN;
+    const totalLengthPx = totalLengthMm * pxPerMm;
+
+    const rulerY = 135;
+    const rulerH = 80;
+
+    // 1. Деревянная подвижная линейка
+    // Рисуем длинную линейку, которая сдвигается вместе с offsetX
+    const minMm = Math.max(0, Math.floor((-offsetX - 60) / pxPerMm));
+    const maxMm = Math.ceil((w - offsetX + 60) / pxPerMm);
+
+    // Основание линейки
+    ctx.fillStyle = '#fef08a';
+    ctx.fillRect(-20, rulerY, w + 40, rulerH);
+    ctx.strokeStyle = '#a16207';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(-20, rulerY, w + 40, rulerH);
+
+    // Миллиметровые и сантиметровые штрихи
+    ctx.fillStyle = '#713f12';
+    ctx.strokeStyle = '#854d0e';
+    ctx.textAlign = 'center';
+
+    for (let mm = minMm; mm <= maxMm; mm++) {
+      let x = offsetX + mm * pxPerMm;
+
+      let tickH = 8;
+      let lineW = 1.2;
+
+      if (mm % 10 === 0) {
+        tickH = 26;
+        lineW = 2;
+        ctx.font = '800 14px system-ui, sans-serif';
+        ctx.fillText(mm / 10, x, rulerY + 46); // Сантиметры
+      } else if (mm % 5 === 0) {
+        tickH = 16;
+        lineW = 1.5;
+      }
+
+      ctx.lineWidth = lineW;
+      ctx.beginPath();
+      ctx.moveTo(x, rulerY);
+      ctx.lineTo(x, rulerY + tickH);
+      ctx.stroke();
+    }
+
+    if (offsetX > 15) {
+      ctx.font = '800 13px system-ui, sans-serif';
+      ctx.fillText('см', offsetX - 12, rulerY + 46);
+    }
+
+    // 2. Ряд частиц (привязан к 0 линейки)
+    const rowY = rulerY - 2;
+    const diamPx = item.d * pxPerMm;
+
+    for (let i = 0; i < countN; i++) {
+      let curX = offsetX + i * diamPx;
+      if (curX + diamPx < -30 || curX > w + 30) continue; // отсекаем невидимые
+
+      let cx = curX + diamPx / 2;
+      let cy = rowY - diamPx / 2;
+
+      ctx.save();
+      if (item.type === "metal") {
+        ctx.beginPath();
+        ctx.arc(cx, cy, diamPx / 2, 0, Math.PI * 2);
+        let grad = ctx.createRadialGradient(cx - diamPx*0.2, cy - diamPx*0.2, 1, cx, cy, diamPx / 2);
+        grad.addColorStop(0, '#ffffff');
+        grad.addColorStop(0.4, '#cbd5e1');
+        grad.addColorStop(1, '#334155');
+        ctx.fillStyle = grad;
+        ctx.fill();
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+      } else if (item.type === "bead") {
+        ctx.beginPath();
+        ctx.arc(cx, cy, diamPx / 2, 0, Math.PI * 2);
+        let grad = ctx.createRadialGradient(cx - diamPx*0.2, cy - diamPx*0.2, 1, cx, cy, diamPx / 2);
+        grad.addColorStop(0, '#fca5a5');
+        grad.addColorStop(0.3, '#ef4444');
+        grad.addColorStop(1, '#7f1d1d');
+        ctx.fillStyle = grad;
+        ctx.fill();
+        ctx.strokeStyle = '#450a0a';
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+        ctx.fillStyle = '#450a0a';
+        ctx.beginPath();
+        ctx.arc(cx, cy, diamPx * 0.13, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (item.type === "grain") {
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, diamPx / 2, diamPx * 0.42, 0.25, 0, Math.PI * 2);
+        let grad = ctx.createRadialGradient(cx - 1, cy - 1, 1, cx, cy, diamPx / 2);
+        grad.addColorStop(0, '#d97706');
+        grad.addColorStop(1, '#78350f');
+        ctx.fillStyle = grad;
+        ctx.fill();
+        ctx.strokeStyle = '#451a03';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      } else if (item.type === "millet") {
+        ctx.beginPath();
+        ctx.arc(cx, cy, diamPx / 2, 0, Math.PI * 2);
+        ctx.fillStyle = '#facc15';
+        ctx.fill();
+        ctx.strokeStyle = '#a16207';
+        ctx.stroke();
+      } else if (item.type === "nut") {
+        ctx.beginPath();
+        const r = diamPx / 2;
+        for (let a = 0; a < 6; a++) {
+          let ang = (a * Math.PI) / 3;
+          let px = cx + r * Math.cos(ang);
+          let py = cy + r * Math.sin(ang);
+          if (a === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        ctx.fillStyle = '#94a3b8';
+        ctx.fill();
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(cx, cy, r * 0.48, 0, Math.PI * 2);
+        ctx.fillStyle = '#0f172a';
+        ctx.fill();
+      } else if (item.type === "bean") {
+        const rx = diamPx / 2;
+        const ry = diamPx * 0.38;
+        ctx.translate(cx, cy);
+        ctx.beginPath();
+        ctx.moveTo(-rx, 0);
+        ctx.bezierCurveTo(-rx, -ry * 1.3, rx * 0.3, -ry * 1.2, rx, -ry * 0.2);
+        ctx.bezierCurveTo(rx * 1.1, ry * 0.8, -0.2 * rx, ry * 1.3, -rx, 0);
+        ctx.closePath();
+        let grad = ctx.createLinearGradient(-rx, -ry, rx, ry);
+        grad.addColorStop(0, '#b91c1c');
+        grad.addColorStop(0.5, '#7f1d1d');
+        grad.addColorStop(1, '#450a0a');
+        ctx.fillStyle = grad;
+        ctx.fill();
+        ctx.strokeStyle = '#450a0a';
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+        ctx.fillStyle = '#fef08a';
+        ctx.beginPath();
+        ctx.ellipse(0, ry * 0.2, rx * 0.22, ry * 0.25, 0.1, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    // 3. Отметки начала (0 мм) и конца ряда
+    const endX = offsetX + totalLengthPx;
+
+    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = '#ef4444';
+    ctx.lineWidth = 2;
+
+    // Линия на 0
+    if (offsetX >= -10 && offsetX <= w + 10) {
+      ctx.beginPath();
+      ctx.moveTo(offsetX, rowY);
+      ctx.lineTo(offsetX, rulerY + 30);
+      ctx.stroke();
+    }
+
+    // Линия на конце ряда
+    if (endX >= -10 && endX <= w + 10) {
+      ctx.beginPath();
+      ctx.moveTo(endX, rowY);
+      ctx.lineTo(endX, rulerY + 30);
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+
+    // Подсказка на экране
+    ctx.font = '700 12px system-ui, sans-serif';
+    ctx.fillStyle = '#64748b';
+    ctx.textAlign = 'left';
+    ctx.fillText('🖐️ Двигайте пальцем линейку влево-вправо', 14, 25);
+  }
+
+  // Проверка по правилам 7 класса
+  function checkLabResult() {
+    const item = ITEMS[currentItemIdx];
+    const trueL = item.d * countN;
+    const trueD = item.d;
+    const trueErr = 1.0 / countN;
+
+    const userL = parseFloat(document.getElementById('inpL').value);
+    const userN = parseInt(document.getElementById('inpN').value);
+    const userD = parseFloat(document.getElementById('inpD').value);
+    const userErr = parseFloat(document.getElementById('inpErr').value);
+
+    if (isNaN(userL) || isNaN(userN) || isNaN(userD)) {
+      statusBox.innerHTML = '<span style="color:#f87171;">⚠️ Пожалуйста, заполните поля: длину ряда L, число частиц N и вычисленный диаметр d!</span>';
+      return;
+    }
+
+    const isL_Ok = Math.abs(userL - trueL) <= 1.5;
+    const isN_Ok = (userN === countN);
+    const isD_Ok = Math.abs(userD - (userL / userN)) < 0.05;
+
+    if (isL_Ok && isN_Ok && isD_Ok) {
+      statusBox.innerHTML = `
+        <div style="color:#4ade80; background:rgba(34,197,94,0.12); padding:10px; border-radius:8px; border:1px solid #22c55e;">
+          <b>✓ Зачёт! Задание для 7 класса выполнено на «отлично».</b><br>
+          • Длина ряда: <i>L = ${userL} мм</i><br>
+          • Число частиц: <i>N = ${userN}</i><br>
+          • Средний размер тела: <b>d ≈ ${userD.toFixed(2)} мм</b><br>
+          • Погрешность: <b>Δd = ±${(1/countN).toFixed(4)} мм</b><br>
+          <span style="color:#facc15;">Итоговая запись: <b>d = (${userD.toFixed(2)} ± ${(1/countN).toFixed(3)}) мм</b></span>
+        </div>
+      `;
+    } else {
+      let errors = [];
+      if (!isN_Ok) errors.push(`число частиц N сейчас равно ${countN}`);
+      if (!isL_Ok) errors.push(`длина ряда L по шкале ближе к ${trueL.toFixed(1)} мм`);
+      if (!isD_Ok) errors.push(`пересчитайте диаметр по формуле d = L / N (${userL} / ${userN})`);
+      statusBox.innerHTML = `<span style="color:#f87171;">⚠️ Требуется исправление: ${errors.join(', ')}.</span>`;
+    }
+  }
+
+  document.getElementById('inpN').value = countN;
+  setTimeout(resize, 50);
+</script>
+
+</body>
+</html>
